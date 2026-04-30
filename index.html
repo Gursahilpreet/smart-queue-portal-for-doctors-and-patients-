@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Fonts (KEEP these in HTML) -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="style.css" />
+
+  <title>SmartQueue — Medical Portal</title>
+</head>
+
+<body>
+  <div id="notif-area"></div>
+
+  <!-- PRESCRIPTION MODAL -->
+  <div class="modal-bg" id="rx-modal">
+    <div class="modal">
+      <div class="modal-title">
+        <span id="rx-modal-title">Write Prescription</span>
+        <button class="modal-close" onclick="closeModal('rx-modal')">×</button>
+      </div>
+      <div class="form-g"><label>Diagnosis / Bimari</label><input id="rx-diag"
+          placeholder="e.g. Viral Fever, Hypertension" /></div>
+      <div class="form-g"><label>Chief Complaint</label><textarea id="rx-complaint" rows="2"
+          placeholder="Patient's main symptoms..."></textarea></div>
+      <div class="form-g"><label>Medications (one per line)</label><textarea id="rx-meds" rows="4"
+          placeholder="e.g. Paracetamol 500mg — 3x daily for 5 days"></textarea></div>
+      <div class="form-g"><label>Doctor's Notes</label><textarea id="rx-notes" rows="2"
+          placeholder="Follow up after 5 days..."></textarea></div>
+      <div style="display:flex;gap:.6rem;margin-top:1rem">
+        <button class="btn btn-purple btn-full" onclick="savePrescription()">Save Prescription</button>
+        <button class="btn" onclick="closeModal('rx-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PATIENT HISTORY MODAL -->
+  <div class="modal-bg" id="hist-modal">
+    <div class="modal">
+      <div class="modal-title">
+        <span id="hist-modal-title">Patient History</span>
+        <button class="modal-close" onclick="closeModal('hist-modal')">×</button>
+      </div>
+      <div id="hist-modal-body"></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">🏥</div>
+        <div>
+          <div class="logo-name">SmartQueue</div>
+          <div class="logo-sub">Medical Portal · Live Sync<span id="sync-dot"></span></div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="session-info" style="display:none">
+          <span class="session-role" id="session-badge">Patient</span>
+          <span id="session-name" style="font-size:12px;color:var(--muted2)"></span>
+        </div>
+        <button id="logout-btn" onclick="logout()" title="Sign Out">LOGOUT</button>
+      </div>
+    </header>
+
+    <!-- ══ AUTH SCREEN ══ -->
+    <div class="screen active" id="screen-auth">
+      <div class="auth-wrap">
+        <div class="auth-box">
+          <div style="text-align:center;margin-bottom:1.5rem">
+            <div style="font-size:36px;margin-bottom:.5rem">🏥</div>
+            <div style="font-size:21px;font-weight:700;letter-spacing:-.5px">SmartQueue Portal</div>
+            <div style="font-size:13px;color:var(--muted2);margin-top:4px">Live cross-tab appointment sync</div>
+          </div>
+          <div class="auth-tabs">
+            <button class="auth-tab active" onclick="authTab('login')">Sign In</button>
+            <button class="auth-tab" onclick="authTab('register')">Register</button>
+          </div>
+          <div id="auth-role-row">
+            <div class="role-tabs">
+              <button class="role-tab active patient" onclick="roleTab('patient')">🤒 Patient</button>
+              <button class="role-tab doctor" onclick="roleTab('doctor')">🩺 Doctor</button>
+            </div>
+          </div>
+          <!-- LOGIN -->
+          <div id="form-login">
+            <div class="form-g"><label>Email / Phone</label><input id="l-id"
+                placeholder="your@email.com or 9876543210" /></div>
+            <div class="form-g"><label>Password</label><input id="l-pw" type="password" placeholder="••••••••" /></div>
+            <button class="btn btn-blue btn-full" onclick="doLogin()" style="margin-top:.5rem">Sign In →</button>
+            <div class="demo-hint">
+              Patient — <span onclick="fillDemo('patient')">patient@demo / 1234</span> &nbsp;|&nbsp;
+              Doctor — <span onclick="fillDemo('doctor')">doctor@demo / 1234</span>
+            </div>
+          </div>
+          <!-- REGISTER -->
+          <div id="form-register" style="display:none">
+            <div class="form-row">
+              <div class="form-g"><label>First Name</label><input id="r-fname" placeholder="Rahul" /></div>
+              <div class="form-g"><label>Last Name</label><input id="r-lname" placeholder="Sharma" /></div>
+            </div>
+            <div class="form-g"><label>Email</label><input id="r-email" type="email" placeholder="rahul@email.com" />
+            </div>
+            <div class="form-g"><label>Phone</label><input id="r-phone" type="tel" placeholder="9876543210" /></div>
+            <div class="form-g"><label>Password</label><input id="r-pw" type="password" placeholder="••••••••" /></div>
+            <div id="doctor-extra" style="display:none">
+              <div class="form-g"><label>Specialty</label>
+                <select id="r-spec">
+                  <option>General Medicine (OPD)</option>
+                  <option>Cardiology</option>
+                  <option>Orthopedics</option>
+                  <option>Dermatology</option>
+                  <option>Pediatrics</option>
+                  <option>Gynecology</option>
+                  <option>ENT</option>
+                  <option>Ophthalmology</option>
+                  <option>Neurology</option>
+                  <option>Psychiatry</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <div class="form-g"><label>Qualification</label><input id="r-qual" placeholder="MBBS, MD" /></div>
+                <div class="form-g"><label>Experience (yrs)</label><input id="r-exp" type="number" placeholder="5" />
+                </div>
+              </div>
+              <div class="form-g"><label>Consultation Fee (₹)</label><input id="r-fee" type="number"
+                  placeholder="500" /></div>
+            </div>
+            <div id="patient-extra">
+              <div class="form-row">
+                <div class="form-g"><label>Age</label><input id="r-age" type="number" placeholder="28" /></div>
+                <div class="form-g"><label>Blood Group</label>
+                  <select id="r-blood">
+                    <option>A+</option>
+                    <option>A-</option>
+                    <option>B+</option>
+                    <option>B-</option>
+                    <option>O+</option>
+                    <option>O-</option>
+                    <option>AB+</option>
+                    <option>AB-</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-blue btn-full" id="reg-btn" onclick="doRegister()" style="margin-top:.5rem">Create
+              Account →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MAIN SCREEN ══ -->
+    <div class="screen" id="screen-main">
+
+      <!-- PATIENT VIEW -->
+      <div id="view-patient" style="display:none">
+
+        <!-- ★ PERSISTENT APPOINTMENT BANNER ★ -->
+        <div id="appt-banner">
+          <div class="appt-inner waiting" id="appt-inner">
+            <div class="appt-circle waiting" id="appt-circle">
+              <div class="tk-n" id="appt-tk">—</div>
+              <div class="tk-l">TOKEN</div>
+            </div>
+            <div class="appt-info">
+              <div class="appt-title" id="appt-title">⏳ Appointment Booked</div>
+              <div class="appt-sub" id="appt-sub">—</div>
+              <div class="appt-pos waiting" id="appt-pos">—</div>
+            </div>
+            <div>
+              <button class="btn btn-sm" onclick="pTab('queue')" style="font-size:11px">View Queue →</button>
+            </div>
+            <div class="appt-prog-row">
+              <div class="appt-prog">
+                <div class="appt-prog-fill waiting" id="appt-prog" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-tabs" style="margin-top:.75rem">
+          <button class="nav-tab active" onclick="pTab('find')">🔍 Find Doctor</button>
+          <button class="nav-tab" onclick="pTab('queue')">🎫 My Queue</button>
+          <button class="nav-tab" onclick="pTab('prescriptions')">💊 Prescriptions</button>
+          <button class="nav-tab" onclick="pTab('history')">📋 Visit History</button>
+
+        </div>
+
+        <!-- Find Doctor -->
+        <div class="page active" id="p-find">
+          <div class="card">
+            <div class="card-title">Browse Doctors by Specialty</div>
+            <div class="specialty-filter" id="spec-filter"></div>
+            <div id="doctor-directory"
+              style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.75rem"></div>
+          </div>
+          <div id="book-section" style="display:none">
+            <div class="card">
+              <div class="card-title">Book Appointment</div>
+              <div id="selected-doc-info" style="margin-bottom:1rem"></div>
+              <button class="btn btn-blue btn-full" onclick="bookWithDoctor()">Book Slot with Selected Doctor →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Queue Status -->
+        <div class="page" id="p-queue">
+          <div class="grid-2">
+            <div id="p-token-empty">
+              <div
+                style="background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--r);padding:2rem;text-align:center;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                <div style="font-size:36px;margin-bottom:.75rem">🎫</div>
+                <div style="font-size:13px;color:var(--muted2)">No active booking.<br>Go to "Find Doctor" to book a
+                  slot.</div>
+              </div>
+            </div>
+            <div id="p-token-filled" style="display:none">
+              <div class="token-hero">
+                <div class="token-lbl">Your Token</div>
+                <div class="token-num" id="p-token-num">—</div>
+                <div class="token-meta" id="p-token-meta">—</div>
+              </div>
+              <div class="card">
+                <div class="card-title">Live Status</div>
+                <div style="font-size:13px;color:var(--muted2)" id="p-pos-text">—</div>
+                <div class="prog">
+                  <div class="prog-fill" id="p-prog" style="width:0%"></div>
+                </div>
+                <div style="font-size:11px;color:var(--muted2);font-family:var(--mono)" id="p-eta">—</div>
+                <div id="p-turn-banner" style="display:none" class="turn-banner">✅ It's your turn! Please proceed to the
+                  counter.</div>
+              </div>
+            </div>
+
+            <!-- Live Queue -->
+            <div class="card" style="grid-column:1/-1">
+              <div class="flex-between" style="margin-bottom:1rem">
+                <div class="card-title" style="margin:0">Live Queue</div>
+                <span style="font-size:11px;color:var(--muted2);font-family:var(--mono)" id="p-q-count">0 waiting</span>
+              </div>
+              <div id="p-now-serving" style="display:none">
+                <div class="now-serving">
+                  <div class="ns-box">
+                    <div class="ns-lbl">Now Serving</div>
+                    <div class="ns-num" id="p-ns-num">—</div>
+                  </div>
+                  <div>
+                    <div class="ns-name" id="p-ns-name">—</div>
+                    <div class="ns-meta" id="p-ns-meta">—</div>
+                  </div>
+                </div>
+              </div>
+              <div id="p-q-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prescriptions -->
+        <div class="page" id="p-prescriptions">
+          <div class="card">
+            <div class="card-title">My Prescriptions</div>
+            <div id="p-rx-list"></div>
+          </div>
+        </div>
+
+        <!-- Visit History -->
+        <div class="page" id="p-history">
+          <div class="card">
+            <div class="card-title">Visit History</div>
+            <div id="p-visit-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOCTOR VIEW -->
+      <div id="view-doctor" style="display:none">
+        <div class="nav-tabs">
+          <button class="nav-tab active" onclick="dTab('dashboard')">📊 Dashboard</button>
+          <button class="nav-tab" id="d-queue-tab" onclick="dTab('queue')">⏭ My Queue</button>
+          <button class="nav-tab" onclick="dTab('patients')">👥 All Patients</button>
+
+        </div>
+
+        <!-- Doctor Dashboard -->
+        <div class="page active" id="d-dashboard">
+          <!-- ★ ARRIVAL ALERT shown on dashboard too ★ -->
+          <div class="arrival-alert" id="d-dash-alert">
+            🔔 <span id="d-dash-alert-text">New patient booked!</span>
+            <button class="btn btn-sm btn-green" style="margin-left:auto" onclick="dTab('queue')">Go to Queue →</button>
+          </div>
+          <div class="grid-4">
+            <div class="stat">
+              <div class="stat-lbl">WAITING</div>
+              <div class="stat-val amber" id="d-stat-wait">0</div>
+            </div>
+            <div class="stat">
+              <div class="stat-lbl">SERVING</div>
+              <div class="stat-val green" id="d-stat-serve">0</div>
+            </div>
+            <div class="stat">
+              <div class="stat-lbl">DONE TODAY</div>
+              <div class="stat-val blue" id="d-stat-done">0</div>
+            </div>
+            <div class="stat">
+              <div class="stat-lbl">MY PATIENTS</div>
+              <div class="stat-val purple" id="d-stat-pts">0</div>
+            </div>
+          </div>
+          <!-- ★ LIVE QUEUE PREVIEW on Dashboard ★ -->
+          <div class="card">
+            <div class="flex-between" style="margin-bottom:1rem">
+              <div class="card-title" style="margin:0">📋 Upcoming Queue</div>
+              <button class="btn btn-sm btn-green" onclick="dTab('queue')">View Full Queue →</button>
+            </div>
+            <div id="d-dash-queue"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">My Profile</div>
+            <div id="d-profile-info"></div>
+          </div>
+        </div>
+
+        <!-- Doctor Queue -->
+        <div class="page" id="d-queue">
+          <!-- ★ ARRIVAL ALERT in queue tab ★ -->
+          <div class="arrival-alert" id="d-queue-alert">
+            🔔 <span id="d-queue-alert-text">New patient added to your queue!</span>
+          </div>
+          <div class="card">
+            <div class="flex-between" style="margin-bottom:1rem">
+              <div class="card-title" style="margin:0">Manage Queue</div>
+              <button class="btn btn-green" onclick="callNext()">⏭ Call Next Patient</button>
+            </div>
+            <div id="d-q-list"></div>
+          </div>
+        </div>
+
+        <!-- Doctor Patients -->
+        <div class="page" id="d-patients">
+          <div class="card">
+            <div class="card-title">Patient Records</div>
+            <div id="d-patient-list"></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- screen-main -->
+  </div><!-- wrap -->
+  <script src="script.js" defer></script>
+</body>
+
+</html>
